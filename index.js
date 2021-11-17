@@ -6,11 +6,13 @@ const ObjectId = require('mongodb').ObjectId
 const admin = require("firebase-admin");
 require('dotenv').config();
 const cors = require('cors');
+const fileUpload = require('express-fileupload');
 const port = process.env.PORT || 8000
 
 
 app.use(cors());
 app.use(express.json());
+app.use(fileUpload());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.57jms.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
@@ -53,6 +55,7 @@ async function run() {
         const database = client.db("doctor_portal");
         const appoinmentsCollection = database.collection("appointments");
         const usersCollection = database.collection("users");
+        const doctorsCollection = database.collection("doctors");
 
         // post appointment
         app.post('/appointments', async (req, res) => {
@@ -88,6 +91,32 @@ async function run() {
             const date = req.query.date;
             const find = { email: email, date: date }
             const result = await appoinmentsCollection.find(find).toArray();
+            res.send(result)
+        })
+
+
+            // add doctors
+            app.post('/doctors', async (req, res) => {
+                const name = req.body.name;
+                const email = req.body.email;
+                const pic = req.files.image;
+                const picData = pic.data;
+                const encodedPic = picData.toString('base64');
+                const imageBuffer = Buffer.from(encodedPic,'base64')
+                const doctor={
+                    name,
+                    email,
+                    image : imageBuffer,
+                }
+                const result = await doctorsCollection.insertOne(doctor);
+                console.log(doctor);
+                res.json(result)
+            })
+
+
+              // get appointment
+        app.get('/doctors',  async (req, res) => {
+            const result = await doctorsCollection.find({}).toArray();
             res.send(result)
         })
 
